@@ -1,0 +1,33 @@
+- job:
+    name: atmosphere:image:build
+    parent: vexxhost-build-docker-image
+    provides: atmosphere:images
+    vars: &atmosphere_images
+      docker_images:
+        - context: .
+          repository: vexxhost/atmosphere-ingress
+          target: atmosphere-ingress
+
+- job:
+    name: atmosphere:image:upload
+    parent: vexxhost-upload-docker-image
+    provides: atmosphere:images
+    vars: *atmosphere_images
+
+- job:
+    name: atmosphere:image:promote
+    parent: vexxhost-promote-docker-image
+    vars: *atmosphere_images
+
+- project:
+    check:
+      jobs:
+        - tox-py37
+        - atmosphere:image:build
+    gate:
+      jobs:
+        - tox-py37
+        - atmosphere:image:upload
+    promote:
+      jobs:
+        - atmosphere:image:promote
