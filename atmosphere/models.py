@@ -12,18 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Models
+
+"""
+# pylint: disable=R0903
+# pylint: disable=W0223
+# pylint: disable=no-member
+# pylint: disable=not-an-iterable
 from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy import func
 from sqlalchemy import exc
 from sqlalchemy.orm import exc as orm_exc
-from dateutil.relativedelta import relativedelta
 from sqlalchemy.types import TypeDecorator
 
 from atmosphere import exceptions
-from atmosphere import utils
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -32,11 +37,44 @@ migrate = Migrate()
 MONTH_START = relativedelta(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
+def get_model_type_from_event(event):
+    """get_model_type_from_event"""
+    if event.startswith('compute.instance'):
+        return Instance, InstanceSpec
+    if event.startswith('aggregate.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('compute_task.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('compute.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('flavor.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('keypair.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('libvirt.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('metrics.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('scheduler.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('server_group.'):
+        raise exceptions.IgnoredEvent
+    if event.startswith('service.'):
+        raise exceptions.IgnoredEvent
+    if event == 'volume.usage':
+        raise exceptions.IgnoredEvent
+
+    raise exceptions.UnsupportedEventType
+
+
 class GetOrCreateMixin:
+    """GetOrCreateMixin"""
+
     @classmethod
-    def get_or_create(self, event):
-        query = self.query_from_event(event)
-        new_instance = self.from_event(event)
+    def get_or_create(cls, event):
+        """get_or_create"""
+        query = cls.query_from_event(event)
+        new_instance = cls.from_event(event)
 
         db_instance = query.first()
         if db_instance is None:
@@ -54,6 +92,8 @@ class GetOrCreateMixin:
 
 
 class Resource(db.Model, GetOrCreateMixin):
+    """Resource"""
+
     uuid = db.Column(db.String(36), primary_key=True)
     type = db.Column(db.String(32), nullable=False)
     project = db.Column(db.String(32), nullable=False)
@@ -66,8 +106,9 @@ class Resource(db.Model, GetOrCreateMixin):
     }
 
     @classmethod
-    def from_event(self, event):
-        cls, _ = utils.get_model_type_from_event(event['event_type'])
+    def from_event(cls, event):
+        """from_event"""
+        cls, _ = get_model_type_from_event(event['event_type'])
 
         return cls(
             uuid=event['traits']['resource_id'],
@@ -76,8 +117,9 @@ class Resource(db.Model, GetOrCreateMixin):
         )
 
     @classmethod
-    def query_from_event(self, event):
-        cls, _ = utils.get_model_type_from_event(event['event_type'])
+    def query_from_event(cls, event):
+        """query_from_event"""
+        cls, _ = get_model_type_from_event(event['event_type'])
 
         return cls.query.filter_by(
             uuid=event['traits']['resource_id'],
@@ -85,8 +127,9 @@ class Resource(db.Model, GetOrCreateMixin):
         ).with_for_update()
 
     @classmethod
-    def get_or_create(self, event):
-        resource = super(Resource, self).get_or_create(event)
+    def get_or_create(cls, event):
+        """get_or_create"""
+        resource = super(Resource, cls).get_or_create(event)
 
         # If the last update is newer than our last update, we assume that
         # another event has been processed that is newer (so we should ignore
@@ -137,6 +180,7 @@ class Resource(db.Model, GetOrCreateMixin):
         return resource
 
     def get_open_period(self):
+        """get_open_period"""
         open_periods = list(filter(lambda p: p.ended_at is None, self.periods))
         if len(open_periods) > 1:
             raise exceptions.MultipleOpenPeriods
@@ -154,16 +198,19 @@ class Resource(db.Model, GetOrCreateMixin):
             'project': self.project,
             'updated_at': self.updated_at,
             'periods': [p.serialize for p in self.periods],
-       }
+            }
 
 
 class Instance(Resource):
+    """Instance"""
+
     __mapper_args__ = {
         'polymorphic_identity': 'OS::Nova::Server'
     }
 
     @classmethod
-    def is_event_ignored(self, event):
+    def is_event_ignored(cls, event):
+        """is_event_ignored"""
         vm_state_is_deleted = (event['traits']['state'] == 'deleted')
         no_deleted_at = ('deleted_at' not in event['traits'])
 
@@ -174,21 +221,27 @@ class Instance(Resource):
 
 
 class BigIntegerDateTime(TypeDecorator):
+    """BigIntegerDateTime"""
+
     impl = db.BigInteger
 
     def process_bind_param(self, value, _):
+        """process_bind_param"""
         if value is None:
             return None
         assert isinstance(value, datetime)
         return value.timestamp() * 1000
 
     def process_result_value(self, value, _):
+        """process_result_value"""
         if value is None:
             return None
         return datetime.fromtimestamp(value / 1000)
 
 
 class Period(db.Model):
+    """Period"""
+
     id = db.Column(db.Integer, primary_key=True)
     resource_uuid = db.Column(db.String(36), db.ForeignKey('resource.uuid'),
                               nullable=False)
@@ -200,6 +253,7 @@ class Period(db.Model):
 
     @property
     def seconds(self):
+        """seconds"""
         ended_at = self.ended_at
         if ended_at is None:
             ended_at = datetime.now()
@@ -214,10 +268,12 @@ class Period(db.Model):
             'ended_at': self.ended_at,
             'seconds': self.seconds,
             'spec': self.spec.serialize,
-       }
+            }
 
 
 class Spec(db.Model, GetOrCreateMixin):
+    """Spec"""
+
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String(32))
 
@@ -226,16 +282,18 @@ class Spec(db.Model, GetOrCreateMixin):
     }
 
     @classmethod
-    def from_event(self, event):
-        _, cls = utils.get_model_type_from_event(event['event_type'])
+    def from_event(cls, event):
+        """from_event"""
+        _, cls = get_model_type_from_event(event['event_type'])
         spec = {c.name: event['traits'][c.name]
                 for c in cls.__table__.columns if c.name != 'id'}
 
         return cls(**spec)
 
     @classmethod
-    def query_from_event(self, event):
-        _, cls = utils.get_model_type_from_event(event['event_type'])
+    def query_from_event(cls, event):
+        """query_from_event"""
+        _, cls = get_model_type_from_event(event['event_type'])
         spec = {c.name: event['traits'][c.name]
                 for c in cls.__table__.columns if c.name != 'id'}
 
@@ -243,6 +301,8 @@ class Spec(db.Model, GetOrCreateMixin):
 
 
 class InstanceSpec(Spec):
+    """InstanceSpec"""
+
     id = db.Column(db.Integer, db.ForeignKey('spec.id'), primary_key=True)
     instance_type = db.Column(db.String(255))
     state = db.Column(db.String(255))
@@ -252,7 +312,7 @@ class InstanceSpec(Spec):
     )
 
     __mapper_args__ = {
-            'polymorphic_identity': 'OS::Nova::Server',
+        'polymorphic_identity': 'OS::Nova::Server',
     }
 
     @property
@@ -262,4 +322,4 @@ class InstanceSpec(Spec):
         return {
             'instance_type': self.instance_type,
             'state': self.state,
-       }
+            }

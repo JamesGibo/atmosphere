@@ -44,18 +44,18 @@ class TestNormalizeEvent:
 
 class TestModelTypeDetection:
     def test_compute_instance(self):
-        assert utils.get_model_type_from_event('compute.instance.exists') == \
+        assert models.get_model_type_from_event('compute.instance.exists') == \
             (models.Instance, models.InstanceSpec)
 
     def test_ignored_resource(self, ignored_event):
         with pytest.raises(exceptions.IgnoredEvent) as e:
-            utils.get_model_type_from_event(ignored_event)
+            models.get_model_type_from_event(ignored_event)
 
         assert e.value.description == "Ignored event type"
 
     def test_unknown_resource(self):
         with pytest.raises(exceptions.UnsupportedEventType) as e:
-            utils.get_model_type_from_event('foobar')
+            models.get_model_type_from_event('foobar')
 
         assert e.value.code == 400
         assert e.value.description == "Unsupported event type"

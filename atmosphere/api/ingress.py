@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Ingress
+
+"""
+
 from flask import Blueprint
 from flask import request
 from flask import abort
 from flask import jsonify
-from dateutil.relativedelta import relativedelta
 
 from atmosphere.app import create_app
 from atmosphere import exceptions
@@ -27,6 +30,7 @@ blueprint = Blueprint('ingress', __name__)
 
 
 def init_application(config=None):
+    """init_application"""
     app = create_app(config)
     app.register_blueprint(blueprint)
     return app
@@ -34,20 +38,17 @@ def init_application(config=None):
 
 @blueprint.route('/v1/event', methods=['POST'])
 def event():
+    """event"""
     if request.json is None:
         abort(400)
 
-    for event in request.json:
-        print(jsonify(event).get_data(True))
-        event = utils.normalize_event(event)
+    for event_data in request.json:
+        print(jsonify(event_data).get_data(True))
+        event_data = utils.normalize_event(event_data)
 
         try:
-            resource = models.Resource.get_or_create(event)
+            models.Resource.get_or_create(event_data)
         except (exceptions.EventTooOld, exceptions.IgnoredEvent):
             return '', 202
-
-        # TODO(mnaser): Drop this logging eventually...
-        print(jsonify(event).get_data(True))
-        print(jsonify(resource.serialize).get_data(True))
 
     return '', 204

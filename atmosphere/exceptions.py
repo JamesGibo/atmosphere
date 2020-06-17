@@ -12,20 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Exceptions
+
+"""
+
 from werkzeug import exceptions
 
 
 class UnsupportedEventType(exceptions.BadRequest):
+    """UnsupportedEventType"""
     description = 'Unsupported event type'
 
 
 class MultipleOpenPeriods(exceptions.Conflict):
+    """MultipleOpenPeriods"""
     description = 'Multiple open periods'
 
 
 class IgnoredEvent(Exception):
+    """IgnoredEvent"""
     description = 'Ignored event type'
 
 
 class EventTooOld(Exception):
-    pass
+    """EventTooOld"""

@@ -2,6 +2,8 @@ before_after
 flake8
 freezegun
 pylint
+pylint-flask
+pylint-flask-sqlalchemy
 pytest
 pytest-cov
 pytest-flask

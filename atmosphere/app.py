@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""App
+
+"""
 import os
 
 from flask import Flask
@@ -20,6 +23,7 @@ from atmosphere import models
 
 
 def create_app(config=None):
+    """create_app"""
     app = Flask(__name__)
 
     if config is not None:
@@ -39,5 +43,3 @@ def create_app(config=None):
     models.migrate.init_app(app, models.db, directory=migrations_path)
 
     return app
-
-
