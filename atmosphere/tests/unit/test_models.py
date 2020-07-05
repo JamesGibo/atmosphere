@@ -64,6 +64,139 @@ class GetOrCreateTestMixin:
 class TestResource(GetOrCreateTestMixin):
     MODEL = models.Resource
 
+    def test_get_all_by_time_range_with_no_data(self):
+        start = datetime.datetime.now()
+        ended = start + relativedelta(hours=+1)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 0
+
+    def test_get_all_by_time_range_by_project(self):
+        event = fake.get_normalized_event()
+        resource = models.Resource.get_or_create(event)
+
+        start = event['traits']['created_at'] - relativedelta(hours=+1)
+        ended = start + relativedelta(hours=+2)
+
+        data = models.Resource.get_all_by_time_range(start, ended,
+                                                     project="project")
+        assert len(data) == 0
+
+        data = models.Resource.get_all_by_time_range(start, ended,
+                                                     project="fake-project")
+        assert len(data) == 1
+        assert data[0].periods[0].seconds == 3600
+
+    def test_get_all_by_time_range_with_resource_ended_before_start(self):
+        event = fake.get_normalized_event()
+        event['traits']['deleted_at'] = event['traits']['created_at'] + \
+            relativedelta(hours=+1)
+
+        resource = models.Resource.get_or_create(event)
+
+        start = event['traits']['deleted_at'] + relativedelta(hours=+1)
+        ended = start + relativedelta(hours=+1)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 0
+
+    def test_get_all_by_time_range_with_resource_started_after_end(self):
+        event = fake.get_normalized_event()
+        resource = models.Resource.get_or_create(event)
+
+        ended = event['traits']['created_at'] - relativedelta(hours=+1)
+        start = ended - relativedelta(hours=+1)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 0
+
+    def test_get_all_by_time_range_with_active_resource_after_start(self):
+        event = fake.get_normalized_event()
+        resource = models.Resource.get_or_create(event)
+
+        start = event['traits']['created_at'] - relativedelta(hours=+1)
+        ended = start + relativedelta(hours=+2)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 1
+        assert data[0].periods[0].seconds == 3600
+
+    def test_get_all_by_time_range_with_active_resource_before_start(self):
+        event = fake.get_normalized_event()
+        resource = models.Resource.get_or_create(event)
+
+        start = event['traits']['created_at'] + relativedelta(minutes=+30)
+        ended = start + relativedelta(minutes=+30)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 1
+        assert data[0].periods[0].seconds == 1800
+
+    def test_get_all_by_time_range_with_active_resource_after_end(self):
+        event = fake.get_normalized_event()
+        event['traits']['deleted_at'] = event['traits']['created_at'] + \
+            relativedelta(hours=+1)
+
+        resource = models.Resource.get_or_create(event)
+
+        start = event['traits']['deleted_at'] + relativedelta(hours=+1)
+        ended = start + relativedelta(hours=+2)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 0
+
+    def test_get_all_by_time_range_with_resource_inside_range(self):
+        event = fake.get_normalized_event()
+        event['traits']['deleted_at'] = event['traits']['created_at'] + \
+            relativedelta(minutes=+15)
+
+        resource = models.Resource.get_or_create(event)
+
+        start = event['traits']['created_at'] - relativedelta(hours=+1)
+        ended = start + relativedelta(hours=+2)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 1
+        assert data[0].periods[0].seconds == 900
+
+    def test_get_all_by_time_range_with_resource_with_multiple_periods(self):
+        event = fake.get_normalized_event()
+        event['traits']['created_at'] = event['traits']['created_at'] + \
+            relativedelta(microseconds=0)
+        models.Resource.get_or_create(event)
+
+        event['generated'] = event['traits']['created_at'] + \
+            relativedelta(minutes=+15, microseconds=0)
+        event['traits']['instance_type'] = 'v2-standard-8'
+        models.Resource.get_or_create(event)
+
+        start = event['traits']['created_at'] - relativedelta(hours=+1)
+        ended = start + relativedelta(hours=+2)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 1
+        assert data[0].periods[0].seconds == 900
+        assert data[0].periods[1].seconds == 2700
+
+    def test_get_all_by_time_range_with_resource_with_one_active_period(self):
+        event = fake.get_normalized_event()
+        event['traits']['created_at'] = event['traits']['created_at'] + \
+            relativedelta(microseconds=0)
+        models.Resource.get_or_create(event)
+
+        event['generated'] = event['traits']['created_at'] + \
+            relativedelta(minutes=+15, microseconds=0)
+        event['traits']['instance_type'] = 'v2-standard-8'
+        models.Resource.get_or_create(event)
+
+        start = event['traits']['created_at'] + relativedelta(minutes=+15)
+        ended = start + relativedelta(minutes=+45)
+        data = models.Resource.get_all_by_time_range(start, ended)
+
+        assert len(data) == 1
+        assert len(data[0].periods) == 1
+        assert data[0].periods[0].seconds == 2700
+
     def test_from_event(self):
         event = fake.get_normalized_event()
         resource = models.Resource.from_event(event)

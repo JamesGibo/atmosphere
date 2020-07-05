@@ -19,24 +19,17 @@
     parent: vexxhost-promote-docker-image
     vars: *atmosphere_images
 
-- job:
-    name: atmosphere:linters:tox
-    parent: tox-linters
-    vars:
-      python_version: 3.7
-
 - project:
     check:
       jobs:
-        - atmosphere:linters:tox
+        - tox-linters
         - tox-py37
         - atmosphere:image:build
     gate:
       jobs:
-        - atmosphere:linters:tox
+        - tox-linters
         - tox-py37
         - atmosphere:image:upload
     promote:
       jobs:
-        - atmosphere:linters:tox
         - atmosphere:image:promote

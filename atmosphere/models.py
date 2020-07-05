@@ -27,6 +27,7 @@ from flask_migrate import Migrate
 from sqlalchemy import exc
 from sqlalchemy.orm import exc as orm_exc
 from sqlalchemy.types import TypeDecorator
+from sqlalchemy import or_
 
 from atmosphere import exceptions
 
@@ -104,6 +105,34 @@ class Resource(db.Model, GetOrCreateMixin):
     __mapper_args__ = {
         'polymorphic_on': type
     }
+
+    @classmethod
+    def get_all_by_time_range(cls, start, end, project=None):
+        """Get all resources given a specific period."""
+        query = cls.query.join(Period).filter(
+            # Resources must have started before the end
+            Period.started_at <= end,
+            # Resources must be still active or ended after start
+            or_(
+                Period.ended_at >= start,
+                Period.ended_at.is_(None)
+            ),
+        )
+
+        if project is not None:
+            query = query.filter(Resource.project == project)
+
+        resources = query.all()
+        for resource in resources:
+            for period in resource.periods:
+                db.session.expunge(period)
+                if period.started_at <= start:
+                    period.started_at = start
+                if period.ended_at is None or period.ended_at >= end:
+                    period.ended_at = end
+            resource.periods = [p for p in resource.periods if p.seconds != 0]
+
+        return resources
 
     @classmethod
     def from_event(cls, event):
@@ -249,7 +278,7 @@ class Period(db.Model):
     ended_at = db.Column(BigIntegerDateTime, index=True)
 
     spec_id = db.Column(db.Integer, db.ForeignKey('spec.id'), nullable=False)
-    spec = db.relationship("Spec")
+    spec = db.relationship("Spec", lazy='joined')
 
     @property
     def seconds(self):

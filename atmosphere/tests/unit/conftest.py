@@ -42,6 +42,7 @@ def ignored_event(request):
 def app():
     app = create_app()
     app.config['TESTING'] = True
+    app.config['SQLALCHEMY_ECHO'] = True
     app.register_blueprint(ingress.blueprint)
     return app
 
