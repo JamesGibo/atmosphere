@@ -7,6 +7,9 @@
         - context: .
           repository: vexxhost/atmosphere-ingress
           target: atmosphere-ingress
+        - context: .
+          repository: vexxhost/atmosphere-usage
+          target: atmosphere-usage
 
 - job:
     name: atmosphere:image:upload

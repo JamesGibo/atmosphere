@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dateutil.relativedelta import relativedelta
 import pytest
 
-from flask_sqlalchemy import SQLAlchemy
+from atmosphere.api import usage
+from atmosphere.tests.unit import fake
+from atmosphere import models
+from atmosphere.models import db
 
-from atmosphere.app import create_app
-from atmosphere.api import ingress
+
+@pytest.fixture
+def app():
+    app = usage.init_application()
+    app.config['TESTING'] = True
+    app.config['SQLALCHEMY_ECHO'] = True
+    return app
 
 
-@pytest.fixture(params=[
-    'aggregate.cache_images.progress',
-    'compute_task.build_instances.error',
-    'compute.exception',
-    'flavor.create',
-    'keypair.create.end',
-    'libvirt.connect.error',
-    'metrics.update',
-    'scheduler.select_destinations.end',
-    'server_group.add_member',
-    'service.create',
-    'volume.usage',
-])
-def ignored_event(request):
-    yield request.param
+@pytest.mark.usefixtures("client")
+class TestResourceNoAuth:
+    def test_get_resources(self, client):
+        response = client.get('/v1/resources')
+
+        assert response.status_code == 401

@@ -27,3 +27,6 @@ ENV FLASK_APP=atmosphere.app \
 
 FROM atmosphere AS atmosphere-ingress
 ENV UWSGI_WSGI_FILE=/usr/local/bin/atmosphere-ingress-wsgi
+
+FROM atmosphere AS atmosphere-usage
+ENV UWSGI_WSGI_FILE=/usr/local/bin/atmosphere-usage-wsgi

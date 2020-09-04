@@ -2,5 +2,6 @@ ceilometer
 Flask
 Flask-Migrate
 Flask-SQLAlchemy
+keystonemiddleware
 python-dateutil
 PyMySQL

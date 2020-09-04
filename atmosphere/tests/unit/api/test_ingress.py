@@ -15,8 +15,25 @@
 from dateutil.relativedelta import relativedelta
 import pytest
 
+from atmosphere.api import ingress
 from atmosphere.tests.unit import fake
 from atmosphere import models
+from atmosphere.models import db
+
+
+@pytest.fixture
+def app():
+    app = ingress.init_application()
+    app.config['TESTING'] = True
+    app.config['SQLALCHEMY_ECHO'] = True
+    return app
+
+
+@pytest.fixture
+def _db(app):
+    db.init_app(app)
+    db.create_all()
+    return db
 
 
 @pytest.mark.usefixtures("client", "db_session")
