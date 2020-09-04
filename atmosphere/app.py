@@ -16,10 +16,25 @@
 
 """
 import os
+import pkg_resources
 
+import sentry_sdk
 from flask import Flask
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from atmosphere import models
+
+
+VERSION = pkg_resources.get_distribution("atmosphere").version
+
+sentry_sdk.init(
+    release="atmosphere@%s" % VERSION,
+    integrations=[
+        FlaskIntegration(),
+        SqlalchemyIntegration()
+    ],
+)
 
 
 def create_app(config=None):

@@ -5,3 +5,4 @@ Flask-SQLAlchemy
 keystonemiddleware
 python-dateutil
 PyMySQL
+sentry-sdk[flask]
