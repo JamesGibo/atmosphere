@@ -14,6 +14,7 @@
 
 """Usage API."""
 
+import os
 from datetime import datetime
 
 from flask import abort
@@ -27,8 +28,17 @@ from atmosphere.app import create_app
 from atmosphere import models
 
 CONF = cfg.CONF
+CONFIG_FILES = ['atmosphere.conf']
+
 
 blueprint = Blueprint('usage', __name__)
+
+
+def _get_config_files(env=None):
+    if env is None:
+        env = os.environ
+    dirname = env.get('OS_ATMOSPHERE_CONFIG_DIR', '/etc/atmosphere').strip()
+    return [os.path.join(dirname, config_file) for config_file in CONFIG_FILES]
 
 
 def init_application(config=None):
@@ -36,7 +46,9 @@ def init_application(config=None):
     app = create_app(config)
     app.register_blueprint(blueprint)
 
-    cfg.CONF([])
+    conf_files = _get_config_files()
+    cfg.CONF([], project='atmosphere', default_config_files=conf_files)
+
     authtoken_config = dict(CONF.keystone_authtoken)
     authtoken_config['log_name'] = app.name
 
@@ -59,4 +71,4 @@ def list_resources():
         abort(400)
 
     resources = models.Resource.get_all_by_time_range(start, end, project_id)
-    return jsonify(resources)
+    return jsonify([r.serialize for r in resources])

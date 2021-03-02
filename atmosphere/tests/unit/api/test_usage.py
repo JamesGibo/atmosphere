@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dateutil.relativedelta import relativedelta
 import pytest
 
 from atmosphere.api import usage
-from atmosphere.tests.unit import fake
-from atmosphere import models
-from atmosphere.models import db
 
 
 @pytest.fixture
 def app():
+    usage.CONFIG_FILES = []
     app = usage.init_application()
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_ECHO'] = True
