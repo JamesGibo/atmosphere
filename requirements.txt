@@ -6,3 +6,4 @@ keystonemiddleware
 python-dateutil
 PyMySQL
 sentry-sdk[flask]
+Flask-Script
