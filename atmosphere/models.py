@@ -31,7 +31,11 @@ from sqlalchemy import or_
 
 from atmosphere import exceptions
 
-db = SQLAlchemy()
+session_options = {
+    'autocommit': False
+}
+
+db = SQLAlchemy(session_options=session_options)
 migrate = Migrate()
 
 
@@ -180,7 +184,8 @@ class Resource(db.Model, GetOrCreateMixin):
         # No existing period, start our first period.
         if len(resource.periods) == 0:
             resource.periods.append(Period(
-                started_at=event['traits']['created_at'],
+                started_at=event['traits'].get('created_at') or
+                event['traits'].get('launched_at'),
                 spec=spec
             ))
 
@@ -244,6 +249,12 @@ class Instance(Resource):
         no_deleted_at = ('deleted_at' not in event['traits'])
 
         if vm_state_is_deleted and no_deleted_at:
+            return True
+
+        # Check if event is missing both created_at and launched_at traits
+        no_created_at = ('created_at' not in event['traits'])
+        no_launched_at = ('launched_at' not in event['traits'])
+        if no_created_at and no_launched_at:
             return True
 
         return False

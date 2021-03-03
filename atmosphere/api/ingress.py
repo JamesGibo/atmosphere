@@ -48,7 +48,9 @@ def event():
 
         try:
             models.Resource.get_or_create(event_data)
-        except (exceptions.EventTooOld, exceptions.IgnoredEvent):
-            return '', 202
+        except exceptions.EventTooOld:
+            return 'Event Too Old', 202
+        except exceptions.IgnoredEvent:
+            return 'Ignored Event', 202
 
     return '', 204

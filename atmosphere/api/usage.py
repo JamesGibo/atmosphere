@@ -15,7 +15,7 @@
 """Usage API."""
 
 import os
-from datetime import datetime
+import dateutil.parser
 
 from flask import abort
 from flask import Blueprint
@@ -65,8 +65,8 @@ def list_resources():
         project_id = request.args['project_id']
 
     try:
-        start = datetime.fromisoformat(request.args['start'])
-        end = datetime.fromisoformat(request.args['end'])
+        start = dateutil.parser.isoparse(request.args['start'])
+        end = dateutil.parser.isoparse(request.args['end'])
     except (KeyError, ValueError):
         abort(400)
 
