@@ -1,0 +1,37 @@
+---
+- event_type: ['compute.instance.*']
+  traits:
+    project_id:
+      fields: payload.tenant_id
+    resource_id:
+      fields: payload.instance_id
+    instance_type:
+      fields: payload.instance_type
+    state:
+      fields: payload.state
+    created_at:
+      type: datetime
+      fields: payload.created_at
+    deleted_at:
+      type: datetime
+      fields: payload.deleted_at
+- event_type: ['volume.exists', 'volume.retype', 'volume.create.*', 'volume.delete.*', 'volume.resize.*', 'volume.attach.*', 'volume.detach.*', 'volume.update.*']
+  traits:
+    project_id:
+      fields: payload.tenant_id
+    resource_id:
+      fields: payload.volume_id
+    volume_type:
+      fields: payload.volume_type
+    volume_size:
+      type: int
+      fields: payload.size
+    state:
+      fields: payload.status
+    created_at:
+      type: datetime
+      fields: payload.created_at
+    deleted_at:
+      type: datetime
+      fields: payload.deleted_at
+...
