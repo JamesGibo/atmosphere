@@ -31,7 +31,4 @@
     created_at:
       type: datetime
       fields: payload.created_at
-    deleted_at:
-      type: datetime
-      fields: payload.deleted_at
 ...

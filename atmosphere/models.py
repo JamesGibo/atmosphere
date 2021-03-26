@@ -46,6 +46,8 @@ def get_model_type_from_event(event):
     """get_model_type_from_event"""
     if event.startswith('compute.instance'):
         return Instance, InstanceSpec
+    if event.startswith('volume.'):
+        return Volume, VolumeSpec
     if event.startswith('aggregate.'):
         raise exceptions.IgnoredEvent
     if event.startswith('compute_task.'):
@@ -65,8 +67,6 @@ def get_model_type_from_event(event):
     if event.startswith('server_group.'):
         raise exceptions.IgnoredEvent
     if event.startswith('service.'):
-        raise exceptions.IgnoredEvent
-    if event == 'volume.usage':
         raise exceptions.IgnoredEvent
 
     raise exceptions.UnsupportedEventType
@@ -198,7 +198,11 @@ class Resource(db.Model, GetOrCreateMixin):
 
         # If we're deleted, then we close the current period.
         if resource.__class__.is_event_delete(event):
-            period.ended_at = event['traits']['deleted_at']
+            # NOTE(mnaser): Some resources don't have `deleted_at`, so we
+            #               resort to the timestamp of the event instead.
+            period.ended_at = event['traits'].get(
+                'deleted_at', event['generated']
+            )
         elif period.spec != spec:
             period.ended_at = event['generated']
 
@@ -263,6 +267,26 @@ class Instance(Resource):
     def is_event_delete(cls, event):
         """is_event_delete"""
         return 'deleted_at' in event['traits']
+
+
+class Volume(Resource):
+    """Volume"""
+
+    STATE_ALLOW_LIST = ('available', 'deleted')
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'OS::Cinder::Volume'
+    }
+
+    @classmethod
+    def is_event_ignored(cls, event):
+        """is_event_ignored"""
+        return event['traits']['state'] not in cls.STATE_ALLOW_LIST
+
+    @classmethod
+    def is_event_delete(cls, event):
+        """is_event_delete"""
+        return event['traits']['state'] == 'deleted'
 
 
 class BigIntegerDateTime(TypeDecorator):
@@ -366,5 +390,32 @@ class InstanceSpec(Spec):
 
         return {
             'instance_type': self.instance_type,
+            'state': self.state,
+            }
+
+
+class VolumeSpec(Spec):
+    """VolumeSpec"""
+
+    id = db.Column(db.Integer, db.ForeignKey('spec.id'), primary_key=True)
+    volume_type = db.Column(db.String(255))
+    volume_size = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+
+    __table_args__ = (
+        db.UniqueConstraint('volume_type', 'volume_size', 'state'),
+    )
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'OS::Cinder::Volume',
+    }
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializable format"""
+
+        return {
+            'volume_type': self.volume_type,
+            'volume_size': self.volume_size,
             'state': self.state,
             }

@@ -24,8 +24,8 @@ from atmosphere import utils
 
 class TestNormalizeEvent:
     def test_normalize_event(self):
-        event = fake.get_event()
-        event_expected = fake.get_event()
+        event = fake.get_instance_event()
+        event_expected = fake.get_instance_event()
         event_expected.update({
             "generated": datetime.datetime(2020, 6, 7, 1, 42, 54, 736337),
             "traits": {
@@ -46,6 +46,10 @@ class TestModelTypeDetection:
     def test_compute_instance(self):
         assert models.get_model_type_from_event('compute.instance.exists') == \
             (models.Instance, models.InstanceSpec)
+
+    def test_volume(self):
+        assert models.get_model_type_from_event('volume.create.start') == \
+            (models.Volume, models.VolumeSpec)
 
     def test_ignored_resource(self, ignored_event):
         with pytest.raises(exceptions.IgnoredEvent) as e:

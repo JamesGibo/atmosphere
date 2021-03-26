@@ -30,8 +30,7 @@ from atmosphere.api import ingress
     'metrics.update',
     'scheduler.select_destinations.end',
     'server_group.add_member',
-    'service.create',
-    'volume.usage',
+    'service.create'
 ])
 def ignored_event(request):
     yield request.param

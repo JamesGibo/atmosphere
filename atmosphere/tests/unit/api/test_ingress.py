@@ -44,7 +44,7 @@ class TestEvent:
         assert response.status_code == 400
 
     def test_with_one_event_provided(self, client):
-        event = fake.get_event()
+        event = fake.get_instance_event()
         response = client.post('/v1/event', json=[event])
 
         assert response.status_code == 204
@@ -53,8 +53,8 @@ class TestEvent:
         assert models.Spec.query.count() == 1
 
     def test_with_multiple_events_provided(self, client):
-        event_1 = fake.get_event(resource_id='fake-resource-1')
-        event_2 = fake.get_event(resource_id='fake-resource-2')
+        event_1 = fake.get_instance_event(resource_id='fake-resource-1')
+        event_2 = fake.get_instance_event(resource_id='fake-resource-2')
 
         response = client.post('/v1/event', json=[event_1, event_2])
 
@@ -64,7 +64,7 @@ class TestEvent:
         assert models.Spec.query.count() == 1
 
     def test_with_old_event_provided(self, client):
-        event_new = fake.get_event()
+        event_new = fake.get_instance_event()
         event_new['generated'] = '2020-06-07T01:42:54.736337'
         response = client.post('/v1/event', json=[event_new])
 
@@ -73,7 +73,7 @@ class TestEvent:
         assert models.Period.query.count() == 1
         assert models.Spec.query.count() == 1
 
-        event_old = fake.get_event()
+        event_old = fake.get_instance_event()
         event_old['generated'] = '2020-06-07T01:40:54.736337'
         response = client.post('/v1/event', json=[event_old])
 
@@ -83,7 +83,7 @@ class TestEvent:
         assert models.Spec.query.count() == 1
 
     def test_with_invalid_event_provided(self, client):
-        event = fake.get_event(event_type='foo.bar.exists')
+        event = fake.get_instance_event(event_type='foo.bar.exists')
         response = client.post('/v1/event', json=[event])
 
         assert response.status_code == 400
@@ -92,7 +92,7 @@ class TestEvent:
         assert models.Spec.query.count() == 0
 
     def test_with_ignored_event_provided(self, client, ignored_event):
-        event = fake.get_event(event_type=ignored_event)
+        event = fake.get_instance_event(event_type=ignored_event)
         response = client.post('/v1/event', json=[event])
 
         assert response.status_code == 202
