@@ -6,4 +6,5 @@ keystonemiddleware
 python-dateutil
 PyMySQL
 sentry-sdk[flask]
+SQLAlchemy<1.4
 Flask-Script
