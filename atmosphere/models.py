@@ -197,7 +197,7 @@ class Resource(db.Model, GetOrCreateMixin):
             raise exceptions.EventTooOld()
 
         # If we're deleted, then we close the current period.
-        if 'deleted_at' in event['traits']:
+        if resource.__class__.is_event_delete(event):
             period.ended_at = event['traits']['deleted_at']
         elif period.spec != spec:
             period.ended_at = event['generated']
@@ -258,6 +258,11 @@ class Instance(Resource):
             return True
 
         return False
+
+    @classmethod
+    def is_event_delete(cls, event):
+        """is_event_delete"""
+        return 'deleted_at' in event['traits']
 
 
 class BigIntegerDateTime(TypeDecorator):

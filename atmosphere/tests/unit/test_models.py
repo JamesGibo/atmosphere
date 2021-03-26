@@ -428,6 +428,15 @@ class TestResource(GetOrCreateTestMixin):
 
 @pytest.mark.usefixtures("db_session")
 class TestInstance:
+    def test_is_event_delete(self):
+        event = fake.get_normalized_event()
+        assert models.Instance.is_event_delete(event) == False
+
+    def test_is_event_delete_for_actual_delete(self):
+        event = fake.get_normalized_event()
+        event['traits']['deleted_at'] = event['generated']
+        assert models.Instance.is_event_delete(event) == True
+
     def test_is_event_ignored(self):
         event = fake.get_normalized_event()
         assert models.Instance.is_event_ignored(event) == False
