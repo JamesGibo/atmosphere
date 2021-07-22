@@ -266,7 +266,7 @@ class Instance(Resource):
     @classmethod
     def is_event_delete(cls, event):
         """is_event_delete"""
-        return 'deleted_at' in event['traits']
+        return 'deleted_at' in event['traits'] or event['traits']['state'] == 'deleted'
 
 
 class Volume(Resource):
