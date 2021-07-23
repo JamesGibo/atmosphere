@@ -31,6 +31,7 @@
     gate:
       jobs:
         - tox-linters
+        - tox-py37
         - tox-py38
         - atmosphere:image:upload
     promote:
