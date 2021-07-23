@@ -69,6 +69,7 @@ def get_model_type_from_event(event):
     if event.startswith('service.'):
         raise exceptions.IgnoredEvent
 
+    print('Unsupported Event Type')
     raise exceptions.UnsupportedEventType
 
 
@@ -169,6 +170,7 @@ class Resource(db.Model, GetOrCreateMixin):
         # this one).
         time = event['generated']
         if resource.updated_at is not None and resource.updated_at > time:
+            print('Event Too Old')
             raise exceptions.EventTooOld()
 
         # Update the last updated_at time now so any older events get rejected
@@ -176,6 +178,7 @@ class Resource(db.Model, GetOrCreateMixin):
 
         # Check if we should ignore event
         if resource.__class__.is_event_ignored(event):
+            print('Event Ignored')
             raise exceptions.IgnoredEvent
 
         # Retrieve spec for this event
@@ -194,6 +197,7 @@ class Resource(db.Model, GetOrCreateMixin):
 
         # If we don't have an open period, there's nothing to do.
         if period is None:
+            print('Event Too Old - No Open Period')
             raise exceptions.EventTooOld()
 
         # If we're deleted, then we close the current period.
@@ -242,8 +246,6 @@ class Resource(db.Model, GetOrCreateMixin):
 class Instance(Resource):
     """Instance"""
 
-    STATE_ALLOW_LIST = ('active', 'deleted')
-
     __mapper_args__ = {
         'polymorphic_identity': 'OS::Nova::Server'
     }
@@ -253,10 +255,8 @@ class Instance(Resource):
         """is_event_ignored"""
 
         # Check if event is missing launched_at traits
+        # Means building state is ignored
         if 'launched_at' not in event['traits']:
-            return True
-
-        if event['traits']['state'] not in cls.STATE_ALLOW_LIST:
             return True
 
         return False
