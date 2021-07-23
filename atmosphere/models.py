@@ -249,13 +249,9 @@ class Instance(Resource):
     @classmethod
     def is_event_ignored(cls, event):
         """is_event_ignored"""
-        vm_state_is_deleted = (event['traits']['state'] == 'deleted')
-        no_deleted_at = ('deleted_at' not in event['traits'])
 
-        if vm_state_is_deleted and no_deleted_at:
-            return True
-
-        # Check if event is missing both created_at and launched_at traits
+        # Check if event is missing launched_at traits
+        # Means building state is skipped
         no_created_at = ('created_at' not in event['traits'])
         no_launched_at = ('launched_at' not in event['traits'])
         if no_created_at and no_launched_at:
@@ -266,7 +262,9 @@ class Instance(Resource):
     @classmethod
     def is_event_delete(cls, event):
         """is_event_delete"""
-        return 'deleted_at' in event['traits']
+
+        return ('deleted_at' in event['traits'] or
+                event['traits']['state'] == 'deleted')
 
 
 class Volume(Resource):
