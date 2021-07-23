@@ -242,6 +242,8 @@ class Resource(db.Model, GetOrCreateMixin):
 class Instance(Resource):
     """Instance"""
 
+    STATE_ALLOW_LIST = ('active', 'deleted')
+
     __mapper_args__ = {
         'polymorphic_identity': 'OS::Nova::Server'
     }
@@ -249,16 +251,12 @@ class Instance(Resource):
     @classmethod
     def is_event_ignored(cls, event):
         """is_event_ignored"""
-        vm_state_is_deleted = (event['traits']['state'] == 'deleted')
-        no_deleted_at = ('deleted_at' not in event['traits'])
 
-        if vm_state_is_deleted and no_deleted_at:
+        # Check if event is missing launched_at traits
+        if 'launched_at' not in event['traits']:
             return True
 
-        # Check if event is missing both created_at and launched_at traits
-        no_created_at = ('created_at' not in event['traits'])
-        no_launched_at = ('launched_at' not in event['traits'])
-        if no_created_at and no_launched_at:
+        if event['traits']['state'] not in cls.STATE_ALLOW_LIST:
             return True
 
         return False
