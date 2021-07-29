@@ -441,12 +441,6 @@ class TestInstance:
         event = fake.get_normalized_instance_event()
         assert models.Instance.is_event_ignored(event) == False
 
-    def test_is_event_ignored_for_pending_delete(self):
-        event = fake.get_normalized_instance_event()
-        event['event_type'] = 'compute.instance.delete.start'
-        event['traits']['state'] = 'deleted'
-        assert models.Instance.is_event_ignored(event) == True
-
     def test_is_event_ignored_for_deleted(self):
         event = fake.get_normalized_instance_event()
         event['event_type'] = 'compute.instance.delete.start'
