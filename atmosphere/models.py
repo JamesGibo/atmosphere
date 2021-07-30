@@ -253,6 +253,14 @@ class Instance(Resource):
     @classmethod
     def is_event_ignored(cls, event):
         """is_event_ignored"""
+        vm_state_is_deleted = (event['traits']['state'] == 'deleted')
+        no_deleted_at = ('deleted_at' not in event['traits'])
+        if vm_state_is_deleted and no_deleted_at:
+            return True
+
+        # Ignore compute.instance.updates events
+        if event['event_type'].startswith('compute.instance.update'):
+            return True
 
         # Check if event is missing launched_at traits
         # Means building state is skipped
