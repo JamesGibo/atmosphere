@@ -1,6 +1,6 @@
 ceilometer
 Flask
-Flask-Migrate==2.7.0
+Flask-Migrate<3.0.0
 Flask-SQLAlchemy
 keystonemiddleware
 python-dateutil
