@@ -1,10 +1,9 @@
 ceilometer
 Flask
-Flask-Migrate<3.0.0
+Flask-Migrate
 Flask-SQLAlchemy
 keystonemiddleware
 python-dateutil
 PyMySQL
 sentry-sdk[flask]
-SQLAlchemy
-Flask-Script
+SQLAlchemy<1.4
