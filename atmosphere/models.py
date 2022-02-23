@@ -69,6 +69,7 @@ def get_model_type_from_event(event):
     if event.startswith('service.'):
         raise exceptions.IgnoredEvent
 
+    print('Unsupported Event Type')
     raise exceptions.UnsupportedEventType
 
 
@@ -169,6 +170,7 @@ class Resource(db.Model, GetOrCreateMixin):
         # this one).
         time = event['generated']
         if resource.updated_at is not None and resource.updated_at > time:
+            print('Event Too Old')
             raise exceptions.EventTooOld()
 
         # Update the last updated_at time now so any older events get rejected
@@ -176,6 +178,7 @@ class Resource(db.Model, GetOrCreateMixin):
 
         # Check if we should ignore event
         if resource.__class__.is_event_ignored(event):
+            print('Event ignored')
             raise exceptions.IgnoredEvent
 
         # Retrieve spec for this event
@@ -194,6 +197,7 @@ class Resource(db.Model, GetOrCreateMixin):
 
         # If we don't have an open period, there's nothing to do.
         if period is None:
+            print('Event Too Old - No Open Period')
             raise exceptions.EventTooOld()
 
         # If we're deleted, then we close the current period.
@@ -256,6 +260,7 @@ class Instance(Resource):
             return True
 
         # Check if event is missing both created_at and launched_at traits
+        # Means building state is skipped
         no_created_at = ('created_at' not in event['traits'])
         no_launched_at = ('launched_at' not in event['traits'])
         if no_created_at and no_launched_at:
@@ -266,7 +271,9 @@ class Instance(Resource):
     @classmethod
     def is_event_delete(cls, event):
         """is_event_delete"""
-        return 'deleted_at' in event['traits']
+
+        return ('deleted_at' in event['traits'] or
+                event['traits']['state'] == 'deleted')
 
 
 class Volume(Resource):
